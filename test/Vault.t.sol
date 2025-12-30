@@ -32,14 +32,13 @@ contract VaultTest is Test {
         vault.deposit(depositAmount);
         vm.stopPrank();
 
-        // FIX: Declare vaultBalance before using it
+    
         uint256 vaultBalance = vault.balances(user);
         assertEq(vaultBalance, depositAmount);
         assertEq(vaderToken.balanceOf(address(vault)), depositAmount);
     }
 
     function testWithdraw() public {
-        // FIX: Declare these variables inside this function scope
         uint256 depositAmount = 10 ether;
         uint256 withdrawAmount = 5 ether;
 
