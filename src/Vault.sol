@@ -60,14 +60,11 @@ contract Vault {
         token = IERC20 (_tokenAddress);
     }
     // Deposit function to allow users to deposit tokens into the vault
+    // Updated for CEI compliance- Checks(requir amount), Effects(update balance), Interactions(transfer tokens)
     function deposit(uint256 amount) external {
         require(amount > 0, "Amount must be greater than zero");
-        require(
-            token.transferFrom(msg.sender, address(this), amount),
-            "Transfer failed"
-        );
-
         balances[msg.sender] += amount;
+        require(token.transferFrom(msg.sender, address(this), amount), "Transfer failed");
     }
 
     // Withdraw function to allow users to withdraw their tokens from the vault
