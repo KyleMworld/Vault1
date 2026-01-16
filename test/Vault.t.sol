@@ -1,0 +1,68 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+import {Test} from "forge-std/Test.sol";
+import {Vault, SkywalkerToken} from "../src/Vault.sol";
+
+
+contract VaultTest is Test {
+    Vault public vault;
+    SkywalkerToken public skywalkerToken;
+    address public user = makeAddr("user");
+    uint256 public initialUserBalance = 100 ether;
+
+    function setUp() public {
+        skywalkerToken = new SkywalkerToken(1000 ether);
+        vault = new Vault(address(skywalkerToken));
+        require(skywalkerToken.transfer(user, initialUserBalance), "Transfer failed");
+    }
+
+    function testDeposit() public {
+        uint256 depositAmount = 10 ether;
+
+        vm.startPrank(user);
+        skywalkerToken.approve(address(vault), depositAmount);
+        vault.deposit(depositAmount);
+        vm.stopPrank();
+
+    
+        uint256 vaultBalance = vault.balances(user);
+        assertEq(vaultBalance, depositAmount);
+        assertEq(skywalkerToken.balanceOf(address(vault)), depositAmount);
+    }
+
+    function testWithdraw() public {
+        uint256 depositAmount = 10 ether;
+        uint256 withdrawAmount = 5 ether;
+
+        vm.startPrank(user);
+        skywalkerToken.approve(address(vault), depositAmount);
+        vault.deposit(depositAmount);
+
+        // Action: Withdraw
+        vault.withdraw(withdrawAmount);
+        vm.stopPrank();
+
+        // Check balances: 10 deposited - 5 withdrawn = 5 remaining
+        assertEq(vault.balances(user), 5 ether);
+        // Total should be (Initial 100 - 10 deposited + 5 withdrawn) = 95
+        assertEq(skywalkerToken.balanceOf(user), initialUserBalance - 5 ether);
+    }
+
+    function test_RevertWhen_InsufficientBalance() public {
+        vm.prank(user);
+        vm.expectRevert("Insufficient balance");
+        vault.withdraw(1 ether);
+    }
+
+    function testFuzz_Deposit(uint256 amount) public {
+        vm.assume(amount > 0 && amount <= initialUserBalance);
+
+        vm.startPrank(user);
+        skywalkerToken.approve(address(vault), amount);
+        vault.deposit(amount);
+        vm.stopPrank();
+
+        assertEq(vault.balances(user), amount);
+    }
+}
