@@ -1,40 +1,34 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {Test, console} from "forge-std/Test.sol";
-import {Vault} from "../src/Vault.sol";
+import {Test} from "forge-std/Test.sol";
+import {Vault, SkywalkerToken} from "../src/Vault.sol";
 
-contract VaderERC20 is ERC20 {
-    constructor() ERC20("Vader", "VADER") {}
-    function mint(address to, uint256 amount) external {
-        _mint(to, amount);
-    }
-}
 
 contract VaultTest is Test {
     Vault public vault;
-    VaderERC20 public vaderToken;
+    SkywalkerToken public skywalkerToken;
     address public user = makeAddr("user");
     uint256 public initialUserBalance = 100 ether;
 
     function setUp() public {
-        vaderToken = new VaderERC20();
-        vault = new Vault(address(vaderToken));
-        vaderToken.mint(user, initialUserBalance);
+        skywalkerToken = new SkywalkerToken(1000 ether);
+        vault = new Vault(address(skywalkerToken));
+        require(skywalkerToken.transfer(user, initialUserBalance), "Transfer failed");
     }
 
     function testDeposit() public {
         uint256 depositAmount = 10 ether;
 
         vm.startPrank(user);
-        vaderToken.approve(address(vault), depositAmount);
+        skywalkerToken.approve(address(vault), depositAmount);
         vault.deposit(depositAmount);
         vm.stopPrank();
 
     
         uint256 vaultBalance = vault.balances(user);
         assertEq(vaultBalance, depositAmount);
-        assertEq(vaderToken.balanceOf(address(vault)), depositAmount);
+        assertEq(skywalkerToken.balanceOf(address(vault)), depositAmount);
     }
 
     function testWithdraw() public {
@@ -42,7 +36,7 @@ contract VaultTest is Test {
         uint256 withdrawAmount = 5 ether;
 
         vm.startPrank(user);
-        vaderToken.approve(address(vault), depositAmount);
+        skywalkerToken.approve(address(vault), depositAmount);
         vault.deposit(depositAmount);
 
         // Action: Withdraw
@@ -52,7 +46,7 @@ contract VaultTest is Test {
         // Check balances: 10 deposited - 5 withdrawn = 5 remaining
         assertEq(vault.balances(user), 5 ether);
         // Total should be (Initial 100 - 10 deposited + 5 withdrawn) = 95
-        assertEq(vaderToken.balanceOf(user), initialUserBalance - 5 ether);
+        assertEq(skywalkerToken.balanceOf(user), initialUserBalance - 5 ether);
     }
 
     function test_RevertWhen_InsufficientBalance() public {
@@ -65,7 +59,7 @@ contract VaultTest is Test {
         vm.assume(amount > 0 && amount <= initialUserBalance);
 
         vm.startPrank(user);
-        vaderToken.approve(address(vault), amount);
+        skywalkerToken.approve(address(vault), amount);
         vault.deposit(amount);
         vm.stopPrank();
 
